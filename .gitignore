@@ -51,3 +51,7 @@ Temporary Items
 
 .directory
 *.kdev4
+
+# Raspberry Pi build
+build-raspberrypi/
+raspberrypi/dist/

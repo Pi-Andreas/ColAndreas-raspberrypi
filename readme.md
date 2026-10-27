@@ -1,3 +1,44 @@
+# ColAndreas for Raspberry Pi
+
+This fork builds ColAndreas **v1.4.0** (upstream tag `v1.4.0.3`) for the
+**64-bit ARM open.mp server on a Raspberry Pi**
+([Pi-Andreas/omp-server-raspberrypi](https://github.com/Pi-Andreas/omp-server-raspberrypi)).
+The plugin code is unchanged; the `raspberrypi` branch only adds an arm64
+build, CI and this section. Every change is in the
+[compare view](https://github.com/Pottus/ColAndreas/compare/v1.4.0.3...Pi-Andreas:ColAndreas-raspberrypi:raspberrypi).
+
+### Install on the Pi
+
+Download `ColAndreas-linux-arm64.tar.gz` from
+[releases](https://github.com/Pi-Andreas/ColAndreas-raspberrypi/releases/latest)
+and unpack it in the server folder (e.g. `~/omp-server`):
+
+```bash
+tar -xzf ColAndreas-linux-arm64.tar.gz
+```
+
+That adds `plugins/ColAndreas.so`, the Bullet physics libraries it needs
+(`plugins/lib*.so.3.24`, loaded from next to the plugin, so nothing to
+install) and `qawno/include/colandreas.inc`. Then:
+
+1. Put your `ColAndreas.cadb` in `scriptfiles/colandreas/` (generated with
+   ColAndreasWizard from your own game files, see Installing below).
+2. Add `"ColAndreas"` to `pawn.legacy_plugins` in `config.json`.
+
+Tested on a Raspberry Pi 4: `CA_Init()` takes about 0.6 s and raycasts match
+MapAndreas heights. The collision world uses a few hundred MB of RAM, so a
+2 GB Pi or larger is recommended alongside a full gamemode.
+
+### Build
+
+`raspberrypi/build.sh` builds in a linux/arm64 Debian 12 container with Docker
+and writes `raspberrypi/dist/ColAndreas-linux-arm64.tar.gz`. The
+`Raspberry Pi build` workflow runs it on GitHub's arm64 runner and publishes a
+release for every `v*-rpi*` tag. The only source change is in `CMakeLists.txt`:
+`-m32` is now used on x86 only, so the upstream build works on ARM.
+
+---
+
 #ColAndreas
 
 ColAndreas is a plugin for SA-MP which creates a simulation of the San Andreas world. Using the [Bullet Physics library](http://bulletphysics.org/), ColAndreas

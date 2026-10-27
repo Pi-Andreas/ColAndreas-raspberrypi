@@ -1,0 +1,44 @@
+name: Raspberry Pi build
+
+# Builds the 64-bit ARM (Raspberry Pi) plugin. A v*-rpi* tag also publishes it
+# as a release; other pushes and PRs only build.
+on:
+  push:
+    branches: [raspberrypi]
+    tags: ["v*-rpi*"]
+  pull_request:
+    branches: [raspberrypi]
+  workflow_dispatch:
+
+jobs:
+  linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Builds inside a Debian 12 container (glibc 2.36, like Raspberry Pi OS
+      # bookworm); the runner itself is newer and would raise the baseline.
+      - name: Build
+        run: ./raspberrypi/build.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ColAndreas-linux-arm64
+          path: raspberrypi/dist/ColAndreas-linux-arm64.tar.gz*
+
+      - name: Release notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          sha=$(cut -d' ' -f1 raspberrypi/dist/ColAndreas-linux-arm64.tar.gz.sha256)
+          sed -e "s/{{TAG}}/${GITHUB_REF_NAME}/g" -e "s/{{SHA256}}/$sha/g" \
+            raspberrypi/release-notes.md > release-notes.md
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "ColAndreas ${{ github.ref_name }} for Raspberry Pi (arm64)"
+          body_path: release-notes.md
+          files: raspberrypi/dist/ColAndreas-linux-arm64.tar.gz*

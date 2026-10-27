@@ -33,9 +33,14 @@ if(WIN32)
 else()
 	add_definitions(-DLINUX)
 
-	set(CMAKE_C_FLAGS "-m32")
-	set(CMAKE_CXX_FLAGS "-m32 -std=c++11 -Wno-write-strings")
-	set(CMAKE_SHARED_LINKER_FLAGS "-m32 -fshort-wchar -shared")
+	# 32-bit only on x86, the SA-MP server's architecture. Elsewhere (e.g. the
+	# 64-bit ARM open.mp server on a Raspberry Pi) build for the native arch.
+	if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|i[3-6]86)$")
+		set(CA_ARCH_FLAG "-m32")
+	endif()
+	set(CMAKE_C_FLAGS "${CA_ARCH_FLAG}")
+	set(CMAKE_CXX_FLAGS "${CA_ARCH_FLAG} -std=c++11 -Wno-write-strings")
+	set(CMAKE_SHARED_LINKER_FLAGS "${CA_ARCH_FLAG} -fshort-wchar -shared")
 
 	set(CMAKE_C_FLAGS_DEBUG "-O0 -g3")
 	set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3")
