@@ -14,9 +14,12 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DIST="$ROOT/raspberrypi/dist"
 
-docker run --rm --platform linux/arm64 -v "$ROOT:/src" -w /src debian:bookworm bash -euo pipefail -c '
+# Everything, packaging included, runs in the container; the outputs are then
+# handed back to the calling user (the container runs as root, which on a
+# Linux host would leave root-owned files the caller can't overwrite).
+docker run --rm --platform linux/arm64 -v "$ROOT:/src" -w /src \
+	-e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" debian:bookworm bash -euo pipefail -c '
 	apt-get update -qq
 	apt-get install -y -qq --no-install-recommends build-essential cmake libbullet-dev patchelf >/dev/null
 	cmake -S . -B build-raspberrypi -DCMAKE_BUILD_TYPE=Release >/dev/null
@@ -33,9 +36,10 @@ docker run --rm --platform linux/arm64 -v "$ROOT:/src" -w /src debian:bookworm b
 	done
 	patchelf --set-rpath "\$ORIGIN" "$stage/plugins/ColAndreas.so"
 	cp Server/include/colandreas.inc "$stage/qawno/include/"
-'
 
-tar --no-xattrs -C "$DIST/stage" -czf "$DIST/ColAndreas-linux-arm64.tar.gz" plugins qawno
-rm -rf "$DIST/stage"
-(cd "$DIST" && sha256sum ColAndreas-linux-arm64.tar.gz 2>/dev/null || shasum -a 256 ColAndreas-linux-arm64.tar.gz) > "$DIST/ColAndreas-linux-arm64.tar.gz.sha256"
-echo "built: $DIST/ColAndreas-linux-arm64.tar.gz"
+	tar --owner=0 --group=0 -C "$stage" -czf raspberrypi/dist/ColAndreas-linux-arm64.tar.gz plugins qawno
+	rm -rf "$stage"
+	(cd raspberrypi/dist && sha256sum ColAndreas-linux-arm64.tar.gz > ColAndreas-linux-arm64.tar.gz.sha256)
+	chown -R "$HOST_UID:$HOST_GID" raspberrypi/dist build-raspberrypi
+'
+echo "built: $ROOT/raspberrypi/dist/ColAndreas-linux-arm64.tar.gz"
